@@ -126,7 +126,7 @@ function resolveGlicoRound(room) {
   const winMap = { rock: 'scissors', scissors: 'paper', paper: 'rock' };
 
   s.log.push({ type: 'system', text: `P1: ${handEmoji(h0)} vs P2: ${handEmoji(h1)}` });
-  s.lastRound = { h0, h1, winner: -1, advance: 0, mineHit: false };
+  s.lastRound = { id: Date.now(), h0, h1, winner: -1, advance: 0, mineHit: false };
 
   if (h0 === h1) {
     s.consecutiveDraws++;

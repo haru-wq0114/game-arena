@@ -245,7 +245,7 @@ socket.on('game-state', (state) => {
 
 // ========== MINE GLICO ==========
 let selectedMines = [];
-let lastGlicoRound = null;
+let lastGlicoRoundId = null;
 let jankenAnimating = false;
 
 function buildStaircaseSVG(positions, myMines, revealedMines) {
@@ -378,15 +378,15 @@ function renderMineGlico(s) {
   if (s.phase === 'mine-placement') {
     renderMinePlacement(s);
   } else if (s.phase === 'playing' || s.phase === 'aiko-choice') {
-    if (s.lastRound && s.lastRound !== lastGlicoRound && !jankenAnimating) {
-      lastGlicoRound = s.lastRound;
+    if (s.lastRound && s.lastRound.id !== lastGlicoRoundId && !jankenAnimating) {
+      lastGlicoRoundId = s.lastRound.id;
       showJankenAnimation(s.lastRound.h0, s.lastRound.h1, s.lastRound.winner, s.lastRound.advance, s.lastRound.mineHit);
       return;
     }
     if (!jankenAnimating) renderGlicoPlaying(s);
   } else if (s.phase === 'finished') {
-    if (s.lastRound && s.lastRound !== lastGlicoRound && !jankenAnimating) {
-      lastGlicoRound = s.lastRound;
+    if (s.lastRound && s.lastRound.id !== lastGlicoRoundId && !jankenAnimating) {
+      lastGlicoRoundId = s.lastRound.id;
       showJankenAnimation(s.lastRound.h0, s.lastRound.h1, s.lastRound.winner, s.lastRound.advance, s.lastRound.mineHit);
       return;
     }
@@ -487,31 +487,33 @@ function playGlicoJanken(hand) {
 }
 
 function renderGlicoFinished(s) {
+  const isWin = s.winner === s.myIndex;
   const allMines = [...s.myMines.map(m => ({ step: m, owner: s.myIndex })), ...(s.opponentMines || []).map(m => ({ step: m, owner: 1 - s.myIndex }))];
   const allRevealed = [...s.revealedMines, ...allMines];
   const unique = [];
   const seen = new Set();
   allRevealed.forEach(m => { const k = `${m.step}-${m.owner}`; if (!seen.has(k)) { seen.add(k); unique.push(m); } });
   const staircaseSvg = buildStaircaseSVG(s.positions, s.myMines, unique);
-  const winnerColor = s.winner === 0 ? '#ff6b81' : '#60a5fa';
-  const logHtml = s.log.map(l => `<div class="msg ${l.type}">${l.text}</div>`).join('');
   render(`
     <div class="screen active">
       <div class="result-overlay">
-        <div class="result-box">
-          <div class="result-icon">${s.winner === s.myIndex ? '🎉' : '😢'}</div>
-          <h2>${s.winner === s.myIndex ? '勝利！' : '敗北...'}</h2>
-          <p style="color:${winnerColor};font-weight:bold;font-size:1.2rem">P${s.winner + 1} の勝ち！</p>
-          <p class="text-sm mt-8">P1: ${s.positions[0]}段 / P2: ${s.positions[1]}段</p>
-          <div class="staircase-container mt-8" style="max-height:200px;overflow:auto">${staircaseSvg}</div>
-          <p class="text-xs text-center mt-8" style="color:var(--text-secondary)">💣 = 全ての地雷が表示されています</p>
+        <div class="result-box" style="text-align:center">
+          <div style="font-size:4rem;font-weight:900;letter-spacing:8px;margin-bottom:8px;
+            color:${isWin ? '#ffd700' : '#ff4444'};
+            text-shadow:0 0 30px ${isWin ? 'rgba(255,215,0,.6)' : 'rgba(255,68,68,.5)'},0 0 60px ${isWin ? 'rgba(255,215,0,.3)' : 'rgba(255,68,68,.25)'}">
+            ${isWin ? 'WIN' : 'LOSE'}
+          </div>
+          <p style="font-size:1rem;margin-bottom:16px;color:var(--text-secondary)">
+            P1: ${s.positions[0]}段 / P2: ${s.positions[1]}段
+          </p>
+          <div class="staircase-container" style="max-height:180px;overflow:auto;margin-bottom:12px">${staircaseSvg}</div>
+          <p class="text-xs" style="color:var(--text-secondary)">💣 全ての地雷が表示されています</p>
           <div class="btn-group mt-16">
-            <button class="btn primary" onclick="socket.emit('restart-game');selectedMines=[];lastGlicoRound=null">もう一度遊ぶ</button>
+            <button class="btn primary" onclick="socket.emit('restart-game');selectedMines=[];lastGlicoRoundId=null">もう一度遊ぶ</button>
             <button class="btn" onclick="showHome()">ホームに戻る</button>
           </div>
         </div>
       </div>
-      <div class="chat-log">${logHtml}</div>
     </div>
   `);
 }
