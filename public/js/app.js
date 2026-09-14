@@ -370,7 +370,7 @@ function showJankenAnimation(h0, h1, winner, advance, mineHit) {
   setTimeout(() => {
     overlay.remove();
     jankenAnimating = false;
-    if (gameState) renderGlicoPlaying(gameState);
+    if (gameState) renderMineGlico(gameState);
   }, mineHit ? 3800 : 3200);
 }
 
