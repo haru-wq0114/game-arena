@@ -539,7 +539,7 @@ function renderGlicoFinished(s) {
 // ========== FREESTYLE JANKEN ==========
 let customMoveData = { name: '', emoji: '🤘', beats: [], losesTo: [], effect: '' };
 
-let lastFreestyleRound = null;
+let lastFreestyleRoundId = null;
 let freestyleAnimating = false;
 
 function showFreestyleAnimation(lr) {
@@ -611,8 +611,8 @@ function showFreestyleAnimation(lr) {
 
 function renderFreestyleJanken(s) {
   if (s.phase === 'move-creation') { renderFreestyleMoveCreation(s); return; }
-  if (s.lastRound && s.lastRound !== lastFreestyleRound && !freestyleAnimating) {
-    lastFreestyleRound = s.lastRound;
+  if (s.lastRound && s.lastRound.id !== lastFreestyleRoundId && !freestyleAnimating) {
+    lastFreestyleRoundId = s.lastRound.id;
     showFreestyleAnimation(s.lastRound);
     return;
   }
@@ -678,6 +678,10 @@ function toggleCustomLose(hand, checked) {
 
 function submitCustomMove() {
   if (!customMoveData.name) { alert('手の名前を入力してください'); return; }
+  if (customMoveData.beats.length === 0) { alert('最低1つの手に勝てるように設定してください'); return; }
+  if (customMoveData.losesTo.length === 0) { alert('最低1つの手に負けるように設定してください'); return; }
+  const overlap = customMoveData.beats.filter(h => customMoveData.losesTo.includes(h));
+  if (overlap.length > 0) { alert('同じ手に「勝つ」と「負ける」の両方を設定することはできません'); return; }
   AudioManager.playClick();
   socket.emit('freestyle-custom-move', customMoveData);
 }

@@ -264,6 +264,8 @@ function judgeCustomMove(move) {
   if (!move.name || !move.beats || !move.losesTo) return { ok: false, reason: '手の名前、勝てる手、負ける手を設定してください' };
   if (move.beats.length === 0) return { ok: false, reason: '最低1つの手に勝つ効果が必要です' };
   if (move.losesTo.length === 0) return { ok: false, reason: '最低1つの手に負ける効果が必要です' };
+  const overlap = move.beats.filter(h => move.losesTo.includes(h));
+  if (overlap.length > 0) return { ok: false, reason: '同じ手に「勝つ」と「負ける」の両方を設定することはできません' };
   const allHands = ['rock', 'scissors', 'paper'];
   if (move.beats.length >= 3 && allHands.every(h => move.beats.includes(h))) {
     return { ok: false, reason: 'すべての基本手に勝つ効果はNGです' };
@@ -377,7 +379,7 @@ function resolveFreestyleRound(room) {
     s.log.push({ type: 'system', text: `P1[${h0Name}] vs P2[${h1Name}] → あいこ！` });
   }
 
-  s.lastRound = { h0, h1, h0Name, h1Name, winner, effectText };
+  s.lastRound = { id: Date.now(), h0, h1, h0Name, h1Name, winner, effectText };
 
   if (winner >= 0) s.effectState.blocked = [false, false];
 
