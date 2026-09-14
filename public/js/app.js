@@ -247,6 +247,8 @@ socket.on('game-state', (state) => {
 let selectedMines = [];
 let lastGlicoRoundId = null;
 let jankenAnimating = false;
+let glicoFinishedShown = false;
+let glicoFinishTimer = null;
 
 function buildStaircaseSVG(positions, myMines, revealedMines) {
   const stepsPerRow = 8;
@@ -376,8 +378,10 @@ function showJankenAnimation(h0, h1, winner, advance, mineHit) {
 
 function renderMineGlico(s) {
   if (s.phase === 'mine-placement') {
+    glicoFinishedShown = false;
     renderMinePlacement(s);
   } else if (s.phase === 'playing' || s.phase === 'aiko-choice') {
+    glicoFinishedShown = false;
     if (s.lastRound && s.lastRound.id !== lastGlicoRoundId && !jankenAnimating) {
       lastGlicoRoundId = s.lastRound.id;
       showJankenAnimation(s.lastRound.h0, s.lastRound.h1, s.lastRound.winner, s.lastRound.advance, s.lastRound.mineHit);
@@ -388,9 +392,18 @@ function renderMineGlico(s) {
     if (s.lastRound && s.lastRound.id !== lastGlicoRoundId && !jankenAnimating) {
       lastGlicoRoundId = s.lastRound.id;
       showJankenAnimation(s.lastRound.h0, s.lastRound.h1, s.lastRound.winner, s.lastRound.advance, s.lastRound.mineHit);
+      if (glicoFinishTimer) clearTimeout(glicoFinishTimer);
+      glicoFinishTimer = setTimeout(() => {
+        if (gameState && gameState.phase === 'finished' && gameState.game === 'mine-glico' && !glicoFinishedShown) {
+          jankenAnimating = false;
+          const overlay = document.querySelector('.janken-anim-overlay');
+          if (overlay) overlay.remove();
+          renderGlicoFinished(gameState);
+        }
+      }, 5000);
       return;
     }
-    if (!jankenAnimating) renderGlicoFinished(s);
+    if (!jankenAnimating && !glicoFinishedShown) renderGlicoFinished(s);
   }
 }
 
@@ -487,6 +500,8 @@ function playGlicoJanken(hand) {
 }
 
 function renderGlicoFinished(s) {
+  if (glicoFinishTimer) { clearTimeout(glicoFinishTimer); glicoFinishTimer = null; }
+  glicoFinishedShown = true;
   const isWin = s.winner === s.myIndex;
   AudioManager.stopBGM();
   if (isWin) { AudioManager.playWin(); Effects.confetti(); Effects.emojiRain('🎉', 15); }
@@ -512,7 +527,7 @@ function renderGlicoFinished(s) {
           <div class="staircase-container" style="max-height:180px;overflow:auto;margin-bottom:12px">${staircaseSvg}</div>
           <p class="text-xs" style="color:var(--text-secondary)">💣 全ての地雷が表示されています</p>
           <div class="btn-group mt-16">
-            <button class="btn primary" onclick="socket.emit('restart-game');selectedMines=[];lastGlicoRoundId=null">もう一度遊ぶ</button>
+            <button class="btn primary" onclick="socket.emit('restart-game');selectedMines=[];lastGlicoRoundId=null;glicoFinishedShown=false">もう一度遊ぶ</button>
             <button class="btn" onclick="showHome()">ホームに戻る</button>
           </div>
         </div>
