@@ -210,7 +210,7 @@ socket.on('game-state', (state) => {
   gameState = state;
   // BGM switching on phase changes
   if (lastGamePhase !== state.phase) {
-    if (state.phase === 'finished') {
+    if (state.phase === 'finished' && state.game !== 'mine-glico') {
       AudioManager.stopBGM();
       if (state.winner === state.myIndex) { AudioManager.playWin(); Effects.confetti(); Effects.emojiRain('🎉', 15); }
       else if (state.winner !== -1) { AudioManager.playLose(); Effects.screenShake(500); }
@@ -488,6 +488,9 @@ function playGlicoJanken(hand) {
 
 function renderGlicoFinished(s) {
   const isWin = s.winner === s.myIndex;
+  AudioManager.stopBGM();
+  if (isWin) { AudioManager.playWin(); Effects.confetti(); Effects.emojiRain('🎉', 15); }
+  else { AudioManager.playLose(); Effects.screenShake(500); }
   const allMines = [...s.myMines.map(m => ({ step: m, owner: s.myIndex })), ...(s.opponentMines || []).map(m => ({ step: m, owner: 1 - s.myIndex }))];
   const allRevealed = [...s.revealedMines, ...allMines];
   const unique = [];
